@@ -4,6 +4,7 @@
 #import <UIKit/UIKit.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <Foundation/Foundation.h>
+#import <AVFoundation/AVFoundation.h>
 
 @interface NativeRingtones : CDVPlugin {
   // Member variables go here.
@@ -104,17 +105,29 @@
   CDVPluginResult* pluginResult = nil;
 
   NSString* ringtoneUri = [command argumentAtIndex:0];
+  
+  NSString* basePath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"www"];
+  NSString* pathFromWWW = [NSString stringWithFormat:@"%@/%@", basePath, ringtoneUri];
 
-  NSURL *fileURL = [NSURL URLWithString:ringtoneUri];
-  SystemSoundID soundID;
-  AudioServicesCreateSystemSoundID((__bridge_retained CFURLRef)fileURL,&soundID);
+  NSURL *fileURL = [NSURL fileURLWithPath : pathFromWWW];
+  CFURLRef soundFileURLRef = (CFURLRef) CFBridgingRetain(fileURL);
+  //SystemSoundID soundID;
+  //AudioServicesCreateSystemSoundID((__bridge_retained CFURLRef)fileURL,&soundID);
 
+  	
+  AVAudioPlayer *_audioPlayer;
+  _audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:fileURL error:nil];
+  [_audioPlayer play];
+  pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+
+  /*
   if (soundID) {
-      AudioServicesPlaySystemSound(soundID);
-      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    AudioServicesPlaySystemSound(soundID);
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
   } else {
-      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
   }
+  */
 
   [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
@@ -140,3 +153,4 @@
 }
 
 @end
+

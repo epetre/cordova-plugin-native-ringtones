@@ -1,3 +1,4 @@
+cordova.define("cordova-plugin-native-ringtones.NativeRingtones", function(require, exports, module) {
 var exec = require('cordova/exec');
 
 function RingtoneManager() {
@@ -22,21 +23,7 @@ RingtoneManager.prototype.playRingtone = function (ringtoneUri, successCallback,
     if (!errorCallback) {
         errorCallback = function (error) { };
     }
-    if (ringtoneUri.indexOf("content") >= 0 || ringtoneUri.indexOf("System") >= 0) {
-        exec(successCallback, errorCallback, "NativeRingtones", "play", [ringtoneUri]);
-    }
-    else {
-        var contentPath = window.location.pathname.substr(window.location.pathname, window.location.pathname.length - 10);
-        var path;
-        if (device.platform === "Android") {
-            path = "file://" + contentPath + ringtoneUri.substr(7, ringtoneUri.length - 1);
-        } else {
-            path = contentPath + ringtoneUri.substr(7, ringtoneUri.length - 1);
-        }
-        new Media(path, function (success) {
-            console.log(success);
-        }).play();
-    }
+    exec(successCallback, errorCallback, "NativeRingtones", "play", [ringtoneUri]);
 };
 
 RingtoneManager.prototype.stopRingtone = function (ringtoneUri, successCallback, errorCallback) {
@@ -46,21 +33,11 @@ RingtoneManager.prototype.stopRingtone = function (ringtoneUri, successCallback,
     if (!errorCallback) {
         errorCallback = function (error) { };
     }
-    if (ringtoneUri.indexOf("content") >= 0 || ringtoneUri.indexOf("System") >= 0) {
-        exec(successCallback, errorCallback, "NativeRingtones", "stop", [ringtoneUri]);
-    }
-    else {
-        var contentPath = window.location.pathname.substr(window.location.pathname, window.location.pathname.length - 10);
-        var path;
-        if (device.platform === "Android") {
-            path = "file://" + contentPath + ringtoneUri.substr(7, ringtoneUri.length - 1);
-        } else {
-            path = contentPath + ringtoneUri.substr(7, ringtoneUri.length - 1);
-        }
-        new Media(path, function (success) {
-            console.log(success);
-        }).stop();
-    }
+    exec(successCallback, errorCallback, "NativeRingtones", "stop", [ringtoneUri]);
 };
 
 module.exports = new RingtoneManager();
+
+});
+
+

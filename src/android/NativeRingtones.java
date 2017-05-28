@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.util.*;
 
 import android.content.ContentValues;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
+import android.media.AudioManager;
 import android.media.RingtoneManager;
 import android.media.Ringtone;
 import android.media.MediaPlayer;
@@ -24,8 +26,7 @@ import android.content.Context;
 /**
  * This class echoes a string called from JavaScript.
  */
-public class NativeRingtones extends CordovaPlugin {
-
+public class NativeRingtones extends CordovaPlugin implements AudioManager.OnAudioFocusChangeListener {
     @Override
     public boolean execute(String action, JSONArray args,
             CallbackContext callbackContext) throws JSONException {
@@ -40,6 +41,16 @@ public class NativeRingtones extends CordovaPlugin {
         }
         return false;
     }
+
+  public void onAudioFocusChange(int focusChange) {
+      if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+          // Pause playback
+      } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+          // Resume playback
+      } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+          // Stop playback
+      }
+  }
 
   private boolean get(String ringtoneType, final CallbackContext callbackContext) throws JSONException{
         RingtoneManager manager = new RingtoneManager(this.cordova.getActivity().getBaseContext());
@@ -91,23 +102,56 @@ public class NativeRingtones extends CordovaPlugin {
     }
 
     private boolean play(String ringtoneUri, final CallbackContext callbackContext) throws JSONException{
-        MediaPlayer ringtoneSound = MediaPlayer.create(this.cordova.getActivity().getApplicationContext(), Uri.parse(ringtoneUri));
+        try {
+          Context ctx = this.cordova.getActivity().getApplicationContext();
+          AssetManager am = ctx.getResources().getAssets();
+          AssetFileDescriptor afd = am.openFd(ringtoneUri);
 
-        if (ringtoneSound != null) {
-            ringtoneSound.start();
-            callbackContext.success("Play the ringtone succennfully!");
-        } else{
+          MediaPlayer ringtoneSound = new MediaPlayer();
+          ringtoneSound.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+          ringtoneSound.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
+          ringtoneSound.prepare();
+
+          final AudioManager audioManager = (AudioManager)this.cordova.getActivity().getSystemService(Context.AUDIO_SERVICE);
+
+          int result = audioManager.requestAudioFocus(this,
+            AudioManager.STREAM_NOTIFICATION,
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+
+          ringtoneSound.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            public void onCompletion(MediaPlayer mp) {
+              audioManager.abandonAudioFocus(NativeRingtones.this);
+              mp.stop();
+              mp.release();
+              callbackContext.success("Play the ringtone succennfully!");
+            }
+          });
+
+          if (ringtoneSound != null) {
+              ringtoneSound.start();
+          } else{
+              callbackContext.error("Can't play the ringtone!");
+          }
+        } catch (Exception e) {
             callbackContext.error("Can't play the ringtone!");
         }
-
         return true;
     }
 
     private boolean stop(String ringtoneUri, final CallbackContext callbackContext) throws JSONException{
-        MediaPlayer ringtoneSound = MediaPlayer.create(this.cordova.getActivity().getApplicationContext(), Uri.parse(ringtoneUri));
+        Context ctx = this.cordova.getActivity().getApplicationContext();
+        AssetManager am = ctx.getResources().getAssets();
+        AssetFileDescriptor afd = am.openFd(ringtoneUri);
 
+        MediaPlayer ringtoneSound = new MediaPlayer();
+        ringtoneSound.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+        ringtoneSound.prepare();
+
+        final AudioManager audioManager = (AudioManager)this.cordova.getActivity().getSystemService(Context.AUDIO_SERVICE);
         if (ringtoneSound != null) {
+            audioManager.abandonAudioFocus(this);
             ringtoneSound.stop();
+            ringtoneSound.release();
             callbackContext.success("Stop the ringtone succennfully!");
         } else{
             callbackContext.error("Can't stop the ringtone!");
@@ -116,3 +160,4 @@ public class NativeRingtones extends CordovaPlugin {
         return true;
     }
 }
+
