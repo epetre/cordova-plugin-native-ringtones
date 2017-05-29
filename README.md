@@ -53,6 +53,14 @@ document.addEventListener('deviceready', function () {
         cordova.plugins.NativeRingtones.playRingtone("/System/Library/Audio/UISounds/Modern/calendar_alert_chord.caf");
 }, false);
 ```
+or from www
+
+```js
+document.addEventListener('deviceready', function () {
+        var ringtones;
+        cordova.plugins.NativeRingtones.playRingtone("www/assets/sounds/notification.mp3");
+}, false);
+```
 
 ## License
 
